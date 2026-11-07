@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Encoding">
+    <file url="file://$PROJECT_DIR$/bridges/mqtt-kafka-bridge/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/bridges/mqtt-kafka-bridge/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/iot-simulator/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/iot-simulator/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/services/alert-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/services/alert-service/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/services/api-gateway/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/services/api-gateway/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/services/device-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/services/device-service/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/services/insight-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/services/insight-service/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/services/notification-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/services/notification-service/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/services/usage-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/services/usage-service/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/services/user-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/services/user-service/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/shared/common-dto/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/shared/common-dto/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/stream-processing/flink-ingestion-job/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/stream-processing/flink-ingestion-job/src/main/resources" charset="UTF-8" />
+  </component>
+</project>

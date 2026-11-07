@@ -1,0 +1,83 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg17-alpine
+    container_name: energyiq-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: energyiq
+      POSTGRES_PASSWORD: energyiq_dev
+      POSTGRES_DB: energyiq
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro    #HOST:CONTAINER:MODE
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U energyiq -d energyiq"]
+      interval: 5s
+      retries: 5
+      timeout: 3s
+      start_period: 10s
+    networks:
+        - energyiq-net
+
+  timescaledb:
+    image: timescale/timescaledb:latest-pg17
+    container_name: energyiq-timescaledb
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: energyiq
+      POSTGRES_PASSWORD: energyiq_dev
+      POSTGRES_DB: energy_db
+      TIMESCALEDB_TELEMETRY: "off"
+    ports:
+      - "5433:5432"
+    volumes:
+      - timescaledb_data:/var/lib/postgresql/data
+      - ./timescaledb/init.sql:/docker-entrypoint-initdb.d/init.sql:ro    #HOST:CONTAINER:MODE
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U energyiq -d energy_db" ]
+      interval: 5s
+      retries: 5
+      timeout: 3s
+      start_period: 10s
+    networks:
+      - energyiq-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: energyiq-redis
+    restart: unless-stopped
+    # Start Redis with disk persistence and a 512MB RAM cap:
+    # --appendonly yes: Save every write to disk (AOF) so data survives restarts (pair with a /data volume)
+    # --maxmemory 512mb: Prevent Redis from exceeding 512MB RAM and crashing other services
+    # --maxmemory-policy allkeys-lru: Automatically evict least-recently-used keys when RAM is full
+    command:
+      - "redis-server"
+      - "--appendonly"
+      - "yes"
+      - "--maxmemory"
+      - "512mb"
+      - "--maxmemory-policy"
+      - "allkeys-lru"
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+        - energyiq-net
+
+
+volumes:
+  postgres_data:
+  timescaledb_data:
+  redis_data:
+
+networks:
+  energyiq-net:
+    driver: bridge
