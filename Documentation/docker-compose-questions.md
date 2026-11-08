@@ -294,3 +294,59 @@ QoS contracts define message delivery guarantees between clients and brokers acr
 * **Industrial IoT (IIoT):** Manufacturing facilities run MQTT architectures wrapping legacy fieldbus systems using **Sparkplug B** to contextualize PLC payloads.
 * **Connected Logistics & Telematics:** Fleet trackers stream asset coordinates, engine diagnostics, and cold-chain temperature telemetry across lossy 3G/4G/5G cellular zones.
 * **Mobile Messaging Platforms:** Mobile push services rely on modified MQTT client agents to sustain persistent connections while minimizing cellular radio battery consumption.
+
+# 🏢 Part 1: The Architecture (Why 2 Devices & 1 Bridge User?)
+
+We designed a secure, production-grade multitenant MQTT architecture. In IoT systems, letting every device access everything is a major security flaw. If one device gets physically compromised, an attacker could control your entire network.
+
+To prevent this, we established strict **least-privilege access control (ACL)** using three specific roles:
+
+### 1. `device-001` and `device-002` (Isolated IoT Clients)
+* **Their Role:** These represent actual physical hardware sensors out in the field (e.g., smart meters monitoring power usage).
+* **Why Separate?** Each device gets its own distinct username and password.
+* **The Security Boundary:** Back in Step 3, you configured an ACL pattern: `pattern readwrite energyiq/devices/%u/#`. Because of this, `device-001` can only publish/subscribe to `energyiq/devices/device-001/...`. It cannot peek at `device-002`'s data, nor can it spoof messages pretending to be `device-002`.
+
+### 2. `bridge-user` (The Central Aggregator)
+* **Its Role:** This user does not belong to a physical sensor. Instead, it is an internal backend application service (like an MQTT-to-Kafka or MQTT-to-Postgres broker) running on your server.
+* **Why Does It Exist?** Your backend application needs to collect telemetry from all devices simultaneously to process analytics.
+* **The Security Boundary:** In your `acl.conf`, you granted this specific user global clearance: `topic readwrite energyiq/devices/#`. The multi-level wildcard (`#`) allows the backend bridge to intercept, monitor, and route data coming from every single device on the network while the devices themselves remain totally blind to one another.
+
+---
+
+# 🛠️ Part 2: Detailed Command Breakdown
+
+Because your local machine doesn't have Mosquitto's specialized security utilities natively installed, we used a throwaway Docker container as an isolated toolbench to generate the password file.
+
+### 🟥 Command 1: Creating the Initial File
+
+```bash
+docker run --rm -v "./:/mosquitto/config" \
+  eclipse-mosquitto:2.0 \
+  mosquitto_passwd -b -c /mosquitto/config/passwords device-001 pass-001
+```
+
+* `docker run`: Tells Docker to pull down and spin up an isolated virtual machine container instance.
+* `--rm`: Automatically remove the container the millisecond it finishes executing the command. This prevents hundreds of old, dead utility containers from cluttering your computer's disk space.
+* `-v "./:/mosquitto/config"`: Creates a volume bind mount. It maps your current local folder (`./` where your config files sit) directly to the internal configuration folder inside the container (`/mosquitto/config`). This means anything the container writes to `/mosquitto/config` is safely saved directly onto your laptop's hard drive.
+* `eclipse-mosquitto:2.0`: The exact Docker image engine to boot up.
+* `mosquitto_passwd`: The specialized binary command line application inside the container that hashes usernames and passwords.
+* `-b`: Stands for **Batch Mode**. Normally, `mosquitto_passwd` stops execution and interactively asks you to type and verify a hidden password. Passing `-b` allows you to supply the username and password explicitly right inside the terminal command inline.
+* `-c`: Stands for **Create**. This instructs the program to completely wipe any file called `passwords` if it already exists and create a brand new, empty database file.
+* `/mosquitto/config/passwords`: The file path inside the container where the output should be written (which targets your local folder via our volume mount).
+* `device-001 pass-001`: The cleartext username and password payload passed to the compiler.
+
+### 🟨 Commands 2 & 3: Appending Additional Users
+
+```bash
+mosquitto_passwd -b /mosquitto/config/passwords device-002 pass-002
+```
+
+> [!IMPORTANT]
+> Notice that the `-c` flag is missing here! If you left the `-c` flag on for command #2, it would completely overwrite and delete `device-001`. By removing `-c`, you tell the utility to carefully open the existing file, append `device-002` (and later `bridge-user`) to the bottom of the list, and re-save everything.
+
+---
+
+# 🔐 Part 3: Cryptographic Password Hashing
+
+Mosquitto does not store your passwords in clear text. If an attacker managed to read your passwords file, they wouldn't see `pass-001`. Instead, the `mosquitto_passwd` tool performs a security function known as **password hashing with a salt**:
+

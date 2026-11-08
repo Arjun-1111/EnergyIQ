@@ -72,11 +72,35 @@ services:
     networks:
         - energyiq-net
 
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    container_name: energyiq-mosquitto
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./mosquitto/acl.conf:/mosquitto/config/acl.conf:ro
+      - ./mosquitto/passwords:/mosquitto/config/passwords:ro
+      - mosquitto_data:/mosquitto/data
+    healthcheck:
+      # mosquitto_sub subscribes to a dummy topic with a 2-second timeout (-W 2).
+      # If the broker accepts the network connection, the exit code is 0 (healthy).
+      test: [ "CMD-SHELL", "mosquitto_sub -t '$$SYS/#' -C 1 -W 2 -u 'bridge-user' -P 'bridge-pass' || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    networks:
+        - energyiq-net
+
 
 volumes:
   postgres_data:
   timescaledb_data:
   redis_data:
+  mosquitto_data:
 
 networks:
   energyiq-net:
