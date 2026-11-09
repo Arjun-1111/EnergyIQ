@@ -77,8 +77,8 @@ services:
     container_name: energyiq-mosquitto
     restart: unless-stopped
     ports:
-      - "1883:1883"
-      - "9001:9001"
+      - "1883:1883" # MQTT default port
+      - "9001:9001" # WebSocket port for MQTT over WebSockets
     volumes:
       - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
       - ./mosquitto/acl.conf:/mosquitto/config/acl.conf:ro
@@ -87,7 +87,7 @@ services:
     healthcheck:
       # mosquitto_sub subscribes to a dummy topic with a 2-second timeout (-W 2).
       # If the broker accepts the network connection, the exit code is 0 (healthy).
-      test: [ "CMD-SHELL", "mosquitto_sub -t '$$SYS/#' -C 1 -W 2 -u 'bridge-user' -P 'bridge-pass' || exit 1" ]
+      test: [ "CMD-SHELL", "mosquitto_pub -h localhost -p 1883 -u 'bridge-user' -P 'bridge-pass' -t 'healthcheck' -m 'ping' || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -95,12 +95,64 @@ services:
     networks:
         - energyiq-net
 
+  energyiq-kafka:
+    image: apache/kafka:latest
+    container_name: energyiq-kafka
+    restart: unless-stopped
+    ports:
+      - "9092:9092" # Internal Docker network gateway
+      - "9094:9094" # External host machine access gateway
+    environment:
+      # --- Cluster Identity ---
+      - KAFKA_CLUSTER_ID=kygh1JRyeugPz78r_h4aig
+      - KAFKA_NODE_ID=0
+      - KAFKA_PROCESS_ROLES=broker,controller
+
+      # --- Network Interfaces & Listeners Binding ---
+      # Added INTERNAL://0.0.0.0:9091 for local exec tooling to bind onto safely
+      - KAFKA_LISTENERS=INTERNAL://0.0.0.0:9091,PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093,EXTERNAL://0.0.0.0:9094
+
+      # --- Metadata Routing Protocol Maps ---
+      # 1. INTERNAL routes local docker exec tools via 127.0.0.1:9091
+      # 2. PLAINTEXT routes other containers via energyiq-kafka:9092
+      # 3. EXTERNAL routes your host computer via localhost:9094
+      - KAFKA_ADVERTISED_LISTENERS=INTERNAL://127.0.0.1:9091,PLAINTEXT://energyiq-kafka:9092,EXTERNAL://localhost:9094
+
+      # Maps the security protocol for the new INTERNAL port mapping
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+
+      # --- Consensus Metadata (Quorum Configs) ---
+      - KAFKA_CONTROLLER_QUORUM_VOTERS=0@energyiq-kafka:9093
+      - KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1
+
+      # --- Operational Hardening ---
+      - KAFKA_AUTO_CREATE_TOPICS_ENABLE=false
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    networks:
+      - energyiq-net
+    healthcheck:
+      # Updated healthcheck to query the isolated internal port 9091
+      test: [ "CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9091 || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+
+
 
 volumes:
   postgres_data:
   timescaledb_data:
   redis_data:
   mosquitto_data:
+  kafka_data:
 
 networks:
   energyiq-net:
