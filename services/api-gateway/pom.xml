@@ -26,6 +26,10 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <!-- Prevents the plugin from demanding a main bootstrap entry point class,remove later -->
+                    <skip>true</skip>
+                </configuration>
             </plugin>
         </plugins>
     </build>

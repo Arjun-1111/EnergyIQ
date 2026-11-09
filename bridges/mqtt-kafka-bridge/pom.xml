@@ -15,9 +15,52 @@
     <name>EnergyIQ MQTT-Kafka Bridge</name>
 
     <dependencies>
+        <!-- Internal Shared Module -->
         <dependency>
             <groupId>com.energyiq</groupId>
             <artifactId>common-dto</artifactId>
+        </dependency>
+
+        <!-- Spring Boot Core Starter -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter</artifactId>
+        </dependency>
+
+        <!-- Spring Boot Web (Imperative MVC for gateway healthcheck probes) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!-- Spring Actuator (Exposes health status and operational metrics) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+        <!-- Spring Kafka (Underlying engine for Kafka streaming producer operations) -->
+        <dependency>
+            <groupId>org.springframework.kafka</groupId>
+            <artifactId>spring-kafka</artifactId>
+        </dependency>
+
+        <!-- Spring Integration MQTT (Declarative adaptation layer for Paho clients) -->
+        <dependency>
+            <groupId>org.springframework.integration</groupId>
+            <artifactId>spring-integration-mqtt</artifactId>
+        </dependency>
+
+        <!-- Spring Boot Data Redis (Required framework for traffic rate limiting engine) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+
+        <!-- Jackson Databind (Explicit inclusion for JSON payload serialization) -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
         </dependency>
     </dependencies>
 
@@ -26,6 +69,10 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <!-- Prevents the plugin from demanding a main bootstrap entry point class,remove later -->
+                    <skip>true</skip>
+                </configuration>
             </plugin>
         </plugins>
     </build>
